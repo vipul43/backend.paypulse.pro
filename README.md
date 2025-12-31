@@ -277,19 +277,19 @@ processing (retry)
 
 1. **Email Sync**: Fetches message IDs from Gmail (lightweight, fast)
 2. **LLM Sync**: Fetches full emails on-demand and sends to OpenRouter
-3. **Payment Extraction**: LLM extracts structured payment data with 85% confidence threshold
+3. **Payment Extraction**: LLM extracts structured payment data with 75% confidence threshold
 4. **Storage**: Valid payments stored in payments table
 
 ### Extracted Payment Fields
 
-**Required fields** (if any cannot be inferred with ≥85% confidence, returns null):
+**Required fields** (if any cannot be inferred with ≥75% confidence, returns null):
 | Field | Description |
 |-------|-------------|
 | `merchant` | Business/entity name exactly as it appears in email |
 | `amount` | Total due amount (numeric, positive even for refunds) |
 | `currency` | ISO 4217 code (INR, USD, EUR, etc.) - must be explicitly inferable |
-| `date` | ISO 8601 with timezone, contextual to status |
-| `status` | draft, scheduled, upcoming, due, overdue, processing, partially_paid, paid, failed, refunded, cancelled, written_off |
+| `date` | ISO 8601 with timezone - due date, payment date, or transaction date |
+| `status` | draft, scheduled, unpaid, processing, partially_paid, paid, failed, refunded, cancelled, written_off |
 
 **Optional fields** (null if not inferable):
 | Field | Description |
@@ -298,19 +298,25 @@ processing (retry)
 | `recurrence` | daily, weekly, biweekly, monthly, bimonthly, quarterly, semiannual, annual |
 | `category` | subscription, utility, emi, credit_card_bill, loan, insurance, rent, misc |
 | `metadata` | Flat JSON with additional details (invoice_number, card_last_four, etc.) |
+| `externalReference` | Gmail URL to source email for cross-referencing |
 
-**Status Logic:**
-- `upcoming`: Due date >24hrs away
-- `due`: Due date within 24hrs
-- `overdue`: Due date has passed
-- Other statuses inferred from email context (paid, failed, refunded, etc.)
+**Status Guide:**
+- `unpaid`: Bills, invoices, dues that need to be paid (frontend calculates upcoming/due/overdue based on current time vs date)
+- `paid`: Payment confirmation, receipt, successful transaction
+- `failed`: Payment failed, declined, unsuccessful
+- `refunded`: Refund processed
+- `cancelled`: Payment/subscription cancelled
+- `processing`: Payment is being processed
+- `partially_paid`: Partial payment made
+- `scheduled`: Payment scheduled for future
+- `draft`: Invoice in draft state
+- `written_off`: Debt written off
 
 **Note:** `credit_card_bill` category is ONLY for credit card dues/statements, not payments made via credit card.
 
 ### Data Sent to LLM
 
 For each email, we send:
-- **current_time**: Current timestamp with timezone (for status inference)
 - **from**: Sender email address
 - **subject**: Email subject line
 - **body**: Plain text body (first 5,000 characters)

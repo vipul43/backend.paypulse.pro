@@ -11,9 +11,7 @@ import (
 const (
 	PaymentStatusDraft         = "draft"
 	PaymentStatusScheduled     = "scheduled"
-	PaymentStatusUpcoming      = "upcoming"
-	PaymentStatusDue           = "due"
-	PaymentStatusOverdue       = "overdue"
+	PaymentStatusUnpaid        = "unpaid" // Frontend calculates upcoming/due/overdue based on current time vs date
 	PaymentStatusProcessing    = "processing"
 	PaymentStatusPartiallyPaid = "partially_paid"
 	PaymentStatusPaid          = "paid"
