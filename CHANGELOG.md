@@ -150,6 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tables affected: account_sync_job, email_sync_job, llm_sync_job, payment
 - Column renames: account_id → accountId, created_at → createdAt, updated_at → updatedAt, etc.
 - Recreated all indexes with new column names
+- Payment externalReference now stores Gmail URL for cross-referencing source email
 
 ### Removed
 

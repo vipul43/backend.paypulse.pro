@@ -167,21 +167,23 @@ func (p *LLMProcessor) processAccountJobs(ctx context.Context, accountID string,
 		}
 
 		// Create payment
+		gmailURL := fmt.Sprintf("https://mail.google.com/mail/u/0/#inbox/%s", job.MessageID)
 		payment := models.Payment{
-			ID:             uuid.New().String(),
-			AccountID:      accountID,
-			Merchant:       paymentData.Merchant,
-			Description:    paymentData.Description,
-			Amount:         *paymentData.Amount,
-			Currency:       paymentData.Currency,
-			Date:           paymentDate,
-			Recurrence:     paymentData.Recurrence,
-			Status:         paymentData.Status,
-			Category:       paymentData.Category,
-			Metadata:       models.JSONB(paymentData.Metadata),
-			RawLlmResponse: models.JSONB(rawResp),
-			CreatedAt:      now,
-			UpdatedAt:      now,
+			ID:                uuid.New().String(),
+			AccountID:         accountID,
+			Merchant:          paymentData.Merchant,
+			Description:       paymentData.Description,
+			Amount:            *paymentData.Amount,
+			Currency:          paymentData.Currency,
+			Date:              paymentDate,
+			Recurrence:        paymentData.Recurrence,
+			Status:            paymentData.Status,
+			Category:          paymentData.Category,
+			ExternalReference: &gmailURL,
+			Metadata:          models.JSONB(paymentData.Metadata),
+			RawLlmResponse:    models.JSONB(rawResp),
+			CreatedAt:         now,
+			UpdatedAt:         now,
 		}
 
 		paymentsToCreate = append(paymentsToCreate, payment)
