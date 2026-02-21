@@ -22,7 +22,7 @@ func (r *AccountSyncJobRepository) GetPendingJobs(ctx context.Context, limit int
 	var jobs []models.AccountSyncJob
 	result := r.db.WithContext(ctx).
 		Where("status = ?", models.StatusPending).
-		Order("created_at ASC").
+		Order(`"createdAt" ASC`).
 		Limit(limit).
 		Find(&jobs)
 	if result.Error != nil {
@@ -36,7 +36,7 @@ func (r *AccountSyncJobRepository) GetFailedJobs(ctx context.Context, limit int)
 	var jobs []models.AccountSyncJob
 	result := r.db.WithContext(ctx).
 		Where("status = ?", models.StatusFailed).
-		Order("created_at ASC").
+		Order(`"createdAt" ASC`).
 		Limit(limit).
 		Find(&jobs)
 	if result.Error != nil {
@@ -50,7 +50,7 @@ func (r *AccountSyncJobRepository) GetProcessingJobs(ctx context.Context, limit 
 	var jobs []models.AccountSyncJob
 	result := r.db.WithContext(ctx).
 		Where("status = ?", models.StatusProcessing).
-		Order("created_at ASC").
+		Order(`"createdAt" ASC`).
 		Limit(limit).
 		Find(&jobs)
 	if result.Error != nil {
@@ -62,14 +62,14 @@ func (r *AccountSyncJobRepository) GetProcessingJobs(ctx context.Context, limit 
 // UpdateStatus updates the job status
 func (r *AccountSyncJobRepository) UpdateStatus(ctx context.Context, jobID string, status models.AccountSyncStatus, lastError *string) error {
 	updates := map[string]interface{}{
-		"status":     status,
-		"last_error": lastError,
-		"updated_at": time.Now(),
+		"status":    status,
+		"lastError": lastError,
+		"updatedAt": time.Now(),
 	}
 
 	if status == models.StatusCompleted || status == models.StatusFailed {
 		now := time.Now()
-		updates["processed_at"] = &now
+		updates["processedAt"] = &now
 	}
 
 	result := r.db.WithContext(ctx).Model(&models.AccountSyncJob{}).
@@ -86,8 +86,8 @@ func (r *AccountSyncJobRepository) IncrementAttempts(ctx context.Context, jobID 
 	result := r.db.WithContext(ctx).Model(&models.AccountSyncJob{}).
 		Where("id = ?", jobID).
 		Updates(map[string]interface{}{
-			"attempts":   gorm.Expr("attempts + 1"),
-			"updated_at": time.Now(),
+			"attempts":  gorm.Expr("attempts + 1"),
+			"updatedAt": time.Now(),
 		})
 	if result.Error != nil {
 		return fmt.Errorf("failed to increment attempts: %w", result.Error)

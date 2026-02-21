@@ -23,7 +23,7 @@ go mod download
 # Install migration CLI
 make migrate-install
 
-# Setup database (creates tables with snake_case columns)
+# Setup database (creates tables with camelCase columns)
 psql "$DATABASE_URL" -f test_setup.sql
 
 # Run migrations
@@ -83,25 +83,25 @@ Defaults (in code):
 
 ## Database Schema
 
-### Account Table (snake_case columns)
-- `id`, `account_id`, `provider_id`, `user_id`
-- `access_token`, `refresh_token`, `id_token`
-- `access_token_expires_at`, `refresh_token_expires_at`
-- `scope`, `password`, `created_at`, `updated_at`
+### Account Table (camelCase columns - Prisma/frontend)
+- `id`, `accountId`, `providerId`, `userId`
+- `accessToken`, `refreshToken`, `idToken`
+- `accessTokenExpiresAt`, `refreshTokenExpiresAt`
+- `scope`, `password`, `createdAt`, `updatedAt`
 
-### Account Sync Job Table
-- `id`, `account_id` (unique, FK to account)
+### Account Sync Job Table (camelCase columns)
+- `id`, `accountId` (unique, FK to account)
 - `status` (VARCHAR: pending/processing/completed/failed)
-- `attempts`, `last_error`
-- `created_at`, `updated_at`, `processed_at`
+- `attempts`, `lastError`
+- `createdAt`, `updatedAt`, `processedAt`
 
-### Email Sync Job Table
-- `id`, `account_id` (FK to account)
+### Email Sync Job Table (camelCase columns)
+- `id`, `accountId` (FK to account)
 - `status` (VARCHAR: pending/processing/synced/failed)
-- `sync_type` (VARCHAR: initial/incremental/webhook)
-- `emails_fetched`, `page_token`, `last_synced_at`
-- `attempts`, `last_error`
-- `created_at`, `updated_at`, `processed_at`
+- `syncType` (VARCHAR: initial/incremental/webhook)
+- `emailsFetched`, `pageToken`, `lastSyncedAt`
+- `attempts`, `lastError`
+- `createdAt`, `updatedAt`, `processedAt`
 
 **Note**: Status is stored as VARCHAR (not enum) for easier schema evolution, with CHECK constraint for validation.
 
@@ -154,9 +154,9 @@ Insert test account:
 ```bash
 psql "$DATABASE_URL" -c "
 INSERT INTO account (
-    id, account_id, provider_id, user_id, 
-    access_token, refresh_token, access_token_expires_at,
-    created_at, updated_at
+    id, \"accountId\", \"providerId\", \"userId\", 
+    \"accessToken\", \"refreshToken\", \"accessTokenExpiresAt\",
+    \"createdAt\", \"updatedAt\"
 )
 VALUES (
     'test-' || gen_random_uuid()::text,
@@ -174,7 +174,7 @@ VALUES (
 
 Check job status:
 ```bash
-psql "$DATABASE_URL" -c "SELECT * FROM account_sync_job ORDER BY created_at DESC LIMIT 5;"
+psql "$DATABASE_URL" -c "SELECT * FROM account_sync_job ORDER BY \"createdAt\" DESC LIMIT 5;"
 ```
 
 View watcher logs:
@@ -190,17 +190,17 @@ Successfully completed job <id>
 - **Polling vs LISTEN/NOTIFY**: Chose polling for MVP simplicity and reliability
 - **Trigger-based job creation**: Ensures no missed accounts even during downtime
 - **VARCHAR status over ENUM**: Easier schema evolution without ALTER TYPE migrations
-- **snake_case columns**: Standard PostgreSQL convention
+- **camelCase columns**: Consistent with Prisma/frontend schema
 - **Graceful shutdown**: Completes current job before exit
 - **Retry logic**: Failed jobs retry up to 3 times before marking as failed
 
 ## Email Sync Strategy
 
 ### Fair Round-Robin with New Account Priority
-- **New accounts** (`last_synced_at = NULL`): Get picked first
+- **New accounts** (`lastSyncedAt = NULL`): Get picked first
 - **After first batch**: Join the fair pool with everyone else
-- **Fair pool**: Oldest `last_synced_at` gets picked next
-- **Query**: `ORDER BY last_synced_at ASC NULLS FIRST, created_at ASC`
+- **Fair pool**: Oldest `lastSyncedAt` gets picked next
+- **Query**: `ORDER BY "lastSyncedAt" ASC NULLS FIRST, "createdAt" ASC`
 
 ### Fetching Behavior
 - Fetches **50 emails per batch** to minimize memory usage
@@ -229,15 +229,15 @@ processing (retry)
 **Key Points:**
 - Partial success stays in `processing` (not pending)
 - All failures go to `failed` status
-- `last_synced_at` updated on both success AND failure (prevents queue blocking)
+- `lastSyncedAt` updated on both success AND failure (prevents queue blocking)
 - Watcher fetches `pending`, `failed`, AND `processing` jobs
 - Jobs stuck in `processing` (from crashes) are automatically retried
 - Infinite retry: failed jobs are picked up again in next cycle
-- Round-robin fairness: oldest `last_synced_at` (or NULL) gets picked first
+- Round-robin fairness: oldest `lastSyncedAt` (or NULL) gets picked first
 
 ### Round-Robin Fairness
-- After processing, `last_synced_at` is updated to NOW()
-- Job goes to **back of queue** (oldest `last_synced_at` goes first)
+- After processing, `lastSyncedAt` is updated to NOW()
+- Job goes to **back of queue** (oldest `lastSyncedAt` goes first)
 - Prevents immediate re-processing of same account
 - Ensures all accounts get equal turns
 

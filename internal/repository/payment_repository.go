@@ -32,7 +32,7 @@ func (r *PaymentRepository) BulkCreate(ctx context.Context, payments []models.Pa
 func (r *PaymentRepository) GetByAccountID(ctx context.Context, accountID string) ([]models.Payment, error) {
 	var payments []models.Payment
 	result := r.db.WithContext(ctx).
-		Where("account_id = ?", accountID).
+		Where(`"accountId" = ?`, accountID).
 		Order("date DESC").
 		Find(&payments)
 	return payments, result.Error

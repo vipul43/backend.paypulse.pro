@@ -62,7 +62,7 @@ func (j *JSONB) Scan(value interface{}) error {
 // Payment represents a payment extracted from an email
 type Payment struct {
 	ID                string    `gorm:"column:id;primaryKey"`
-	AccountID         string    `gorm:"column:account_id;index"`
+	AccountID         string    `gorm:"column:accountId;index"`
 	Merchant          string    `gorm:"column:merchant;index"`
 	Description       *string   `gorm:"column:description"`
 	Amount            float64   `gorm:"column:amount"`
@@ -71,11 +71,11 @@ type Payment struct {
 	Recurrence        *string   `gorm:"column:recurrence"`
 	Status            string    `gorm:"column:status;index"`
 	Category          *string   `gorm:"column:category"`
-	ExternalReference *string   `gorm:"column:external_reference"`
+	ExternalReference *string   `gorm:"column:externalReference"`
 	Metadata          JSONB     `gorm:"column:metadata;type:jsonb"`
-	RawLlmResponse    JSONB     `gorm:"column:raw_llm_response;type:jsonb"`
-	CreatedAt         time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt         time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	RawLlmResponse    JSONB     `gorm:"column:rawLlmResponse;type:jsonb"`
+	CreatedAt         time.Time `gorm:"column:createdAt;autoCreateTime"`
+	UpdatedAt         time.Time `gorm:"column:updatedAt;autoUpdateTime"`
 }
 
 // TableName specifies the table name for GORM

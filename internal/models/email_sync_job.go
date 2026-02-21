@@ -22,17 +22,17 @@ const (
 
 type EmailSyncJob struct {
 	ID            string          `gorm:"column:id;primaryKey"`
-	AccountID     string          `gorm:"column:account_id;index"`
+	AccountID     string          `gorm:"column:accountId;index"`
 	Status        EmailSyncStatus `gorm:"column:status;index"`
-	SyncType      EmailSyncType   `gorm:"column:sync_type"`
-	EmailsFetched int             `gorm:"column:emails_fetched"`
-	PageToken     *string         `gorm:"column:page_token"`
-	LastSyncedAt  *time.Time      `gorm:"column:last_synced_at"`
+	SyncType      EmailSyncType   `gorm:"column:syncType"`
+	EmailsFetched int             `gorm:"column:emailsFetched"`
+	PageToken     *string         `gorm:"column:pageToken"`
+	LastSyncedAt  *time.Time      `gorm:"column:lastSyncedAt"`
 	Attempts      int             `gorm:"column:attempts"`
-	LastError     *string         `gorm:"column:last_error"`
-	CreatedAt     time.Time       `gorm:"column:created_at"`
-	UpdatedAt     time.Time       `gorm:"column:updated_at"`
-	ProcessedAt   *time.Time      `gorm:"column:processed_at"`
+	LastError     *string         `gorm:"column:lastError"`
+	CreatedAt     time.Time       `gorm:"column:createdAt"`
+	UpdatedAt     time.Time       `gorm:"column:updatedAt"`
+	ProcessedAt   *time.Time      `gorm:"column:processedAt"`
 }
 
 // TableName specifies the table name for GORM

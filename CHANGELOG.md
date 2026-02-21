@@ -72,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account UPDATE trigger: now triggers account sync job reset when account is updated
 - Account sync job reset on update: sets status to pending, clears last_error and processed_at
 - Full re-sync on account update: entire sync process (account → email → LLM) reruns from beginning
+- CI migrations test job: spins up PostgreSQL 18, runs all migrations up/down/up to verify integrity
 
 ### Changed
 
@@ -145,6 +146,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept golang-migrate for manual migrations (CLI, Makefile) - GORM only used for queries
 - Removed go-sqlmock tests (incompatible with GORM), kept interface-based service tests
 - Account model moved from repository package to models package for consistency
+- Renamed all columns in application tables from snake_case to camelCase for consistency with account table (Prisma/frontend schema)
+- Tables affected: account_sync_job, email_sync_job, llm_sync_job, payment
+- Column renames: account_id → accountId, created_at → createdAt, updated_at → updatedAt, etc.
+- Recreated all indexes with new column names
 
 ### Removed
 
