@@ -1,4 +1,7 @@
-.PHONY: help build run deps migrate-install migrate-up migrate-down migrate-status migrate-create fmt fmt-check lint-install lint test test-coverage ci clean
+.PHONY: help build run deps migrate-install migrate-up migrate-down migrate-status migrate-create migrate-force fmt fmt-check lint-install lint test test-coverage ci clean
+
+# Define migrate binary path
+MIGRATE := $(shell go env GOPATH)/bin/migrate
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -18,25 +21,25 @@ deps: ## Download dependencies
 	go mod tidy
 
 migrate-install: ## Install golang-migrate CLI
-	@which migrate > /dev/null || (echo "Installing golang-migrate..." && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest)
+	@test -f $(MIGRATE) || (echo "Installing golang-migrate..." && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest && echo "✅ Installed to $(MIGRATE)")
 
 migrate-up: migrate-install ## Apply all pending migrations
 	@test -f .env || (echo "Error: .env file not found" && exit 1)
 	@bash -c 'source .env && test -n "$$DATABASE_URL" || (echo "Error: DATABASE_URL not set in .env" && exit 1)'
-	@bash -c 'source .env && migrate -path migrations -database "$$DATABASE_URL" up'
+	@bash -c 'source .env && $(MIGRATE) -path migrations -database "$$DATABASE_URL" up'
 
 migrate-down: migrate-install ## Rollback last migration
 	@test -f .env || (echo "Error: .env file not found" && exit 1)
 	@bash -c 'source .env && test -n "$$DATABASE_URL" || (echo "Error: DATABASE_URL not set in .env" && exit 1)'
-	@bash -c 'source .env && migrate -path migrations -database "$$DATABASE_URL" down 1'
+	@bash -c 'source .env && $(MIGRATE) -path migrations -database "$$DATABASE_URL" down 1'
 
 migrate-status: migrate-install ## Show current migration version
 	@test -f .env || (echo "Error: .env file not found" && exit 1)
 	@bash -c 'source .env && test -n "$$DATABASE_URL" || (echo "Error: DATABASE_URL not set in .env" && exit 1)'
-	@bash -c 'source .env && migrate -path migrations -database "$$DATABASE_URL" version'
+	@bash -c 'source .env && $(MIGRATE) -path migrations -database "$$DATABASE_URL" version'
 
 migrate-create: migrate-install ## Create a new migration (usage: make migrate-create name=migration_name)
-	migrate create -ext sql -dir migrations -seq $(name)
+	$(MIGRATE) create -ext sql -dir migrations -seq $(name)
 
 fmt: ## Format code using gofmt
 	@echo "Formatting code..."
