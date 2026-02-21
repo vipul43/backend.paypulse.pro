@@ -13,9 +13,7 @@ func TestPaymentStatus_Constants(t *testing.T) {
 	}{
 		{"draft", PaymentStatusDraft, "draft"},
 		{"scheduled", PaymentStatusScheduled, "scheduled"},
-		{"upcoming", PaymentStatusUpcoming, "upcoming"},
-		{"due", PaymentStatusDue, "due"},
-		{"overdue", PaymentStatusOverdue, "overdue"},
+		{"unpaid", PaymentStatusUnpaid, "unpaid"},
 		{"processing", PaymentStatusProcessing, "processing"},
 		{"partially_paid", PaymentStatusPartiallyPaid, "partially_paid"},
 		{"paid", PaymentStatusPaid, "paid"},
@@ -63,7 +61,7 @@ func TestPayment_Structure(t *testing.T) {
 	now := time.Now()
 	description := "Test payment"
 	category := "subscription"
-	externalRef := "INV-123"
+	externalRef := "https://mail.google.com/mail/u/0/#inbox/abc123"
 	recurrence := RecurrenceMonthly
 
 	payment := Payment{
@@ -75,11 +73,11 @@ func TestPayment_Structure(t *testing.T) {
 		Currency:          "USD",
 		Date:              now,
 		Recurrence:        &recurrence,
-		Status:            PaymentStatusUpcoming,
+		Status:            PaymentStatusUnpaid,
 		Category:          &category,
 		ExternalReference: &externalRef,
-		Metadata:          map[string]interface{}{"plan": "premium"},
-		RawLlmResponse:    map[string]interface{}{"raw": "data"},
+		Metadata:          JSONB{"plan": "premium"},
+		RawLlmResponse:    JSONB{"raw": "data"},
 		CreatedAt:         now,
 		UpdatedAt:         now,
 	}
@@ -93,7 +91,7 @@ func TestPayment_Structure(t *testing.T) {
 	if payment.Amount != 19.99 {
 		t.Errorf("Expected Amount 19.99, got %f", payment.Amount)
 	}
-	if payment.Status != PaymentStatusUpcoming {
-		t.Errorf("Expected Status 'upcoming', got %s", payment.Status)
+	if payment.Status != PaymentStatusUnpaid {
+		t.Errorf("Expected Status 'unpaid', got %s", payment.Status)
 	}
 }

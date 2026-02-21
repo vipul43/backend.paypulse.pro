@@ -204,8 +204,6 @@ func (c *Client) cleanJSONResponse(content string) string {
 
 // buildPrompt builds the LLM prompt from email data
 func (c *Client) buildPrompt(email EmailData) string {
-	currentTime := time.Now().Format(time.RFC3339)
-
 	return fmt.Sprintf(`You are an AI that extracts structured payment information from emails.
 
 Analyze the input and return a JSON object for the payment table. Only return the JSON if you are ≥75%% confident in ALL required fields. Otherwise, return: null
@@ -230,8 +228,8 @@ Analyze the input and return a JSON object for the payment table. Only return th
 | merchant | string | Business/entity name exactly as it appears in input |
 | amount | number | Total due amount. Numeric only, no symbols/commas. Positive always (even for refunds). Breakups go to metadata |
 | currency | string | ISO 4217 code (INR, USD, EUR, GBP, JPY, etc.) |
-| date | string | ISO 8601 with timezone (YYYY-MM-DDTHH:MM:SS±HH:MM). Contextual to status - compare with current_time |
-| status | string | One of: draft, scheduled, upcoming, due, overdue, processing, partially_paid, paid, failed, refunded, cancelled, written_off |
+| date | string | ISO 8601 with timezone (YYYY-MM-DDTHH:MM:SS±HH:MM). The due date, payment date, or transaction date from the email |
+| status | string | One of: draft, scheduled, unpaid, processing, partially_paid, paid, failed, refunded, cancelled, written_off. Use 'unpaid' for pending payments (bills, invoices, dues) |
 
 ### OPTIONAL FIELDS (null if not inferable)
 
@@ -242,19 +240,29 @@ Analyze the input and return a JSON object for the payment table. Only return th
 | category | string | subscription, utility, emi, credit_card_bill, loan, insurance, rent, misc. credit_card_bill is ONLY for credit card dues/statements, not payments made via credit card |
 | metadata | object | Flat JSON with all additional inferred details: invoice_number, subscription_id, order_id, utr, reference_number, card_last_four, billing_period, plan_name, minimum_due, payment_method, etc. Use {} if none |
 
+### STATUS GUIDE
+- unpaid: Bills, invoices, dues that need to be paid (most common for payment reminder emails)
+- paid: Payment confirmation, receipt, successful transaction
+- failed: Payment failed, declined, unsuccessful
+- refunded: Refund processed
+- cancelled: Payment/subscription cancelled
+- processing: Payment is being processed
+- partially_paid: Partial payment made
+- scheduled: Payment scheduled for future
+- draft: Invoice in draft state
+- written_off: Debt written off
+
 ### RULES
 - Return ONLY raw JSON or null. No explanations, no markdown.
 - All values must be inferred from input. Never fabricate.
 - Merchant name should be preserved exactly as found, no normalization.
-- Status logic using current_time: upcoming (>24hrs away), due (within 24hrs), overdue (past due date).
 - Promotional/marketing emails (e.g., "Pay now and get X") → return null
 - Confidence < 75%% on any required field → return null
 
 ### INPUT
-current_time: %s
 from: %s
 subject: %s
-body: %s`, currentTime, email.From, email.Subject, email.Body)
+body: %s`, email.From, email.Subject, email.Body)
 }
 
 // isValidPayment checks if the payment data has all required fields

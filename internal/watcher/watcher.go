@@ -12,6 +12,8 @@ import (
 	"github.com/vipul43/kiwis-worker/internal/service"
 )
 
+const accountJobBackfillGracePeriod = 2 * time.Minute
+
 type Watcher struct {
 	cfg              *config.Config
 	accountJobRepo   *repository.AccountSyncJobRepository
@@ -46,6 +48,11 @@ func New(
 func (w *Watcher) Start(ctx context.Context) error {
 	log.Println("Starting watcher for account and email sync jobs...")
 
+	// Startup pass for legacy/missed account rows without sync jobs.
+	if err := w.backfillMissingAccountJobs(ctx); err != nil {
+		log.Printf("Warning: failed to backfill missing account sync jobs on startup: %v", err)
+	}
+
 	// Process any pending jobs from previous runs
 	if err := w.processAllPendingJobs(ctx); err != nil {
 		log.Printf("Warning: failed to process pending jobs on startup: %v", err)
@@ -66,6 +73,19 @@ func (w *Watcher) Start(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (w *Watcher) backfillMissingAccountJobs(ctx context.Context) error {
+	// Skip recent account rows to give trigger-based inserts time to complete.
+	cutoff := time.Now().Add(-accountJobBackfillGracePeriod)
+	createdJobs, err := w.accountJobRepo.CreateMissingJobsForAccountsOlderThan(ctx, cutoff)
+	if err != nil {
+		return err
+	}
+	if createdJobs > 0 {
+		log.Printf("Backfilled %d missing account sync job(s) from account table (older than %s)", createdJobs, cutoff.Format(time.RFC3339))
+	}
+	return nil
 }
 
 // processAllPendingJobs processes both account sync and email sync jobs
@@ -90,6 +110,11 @@ func (w *Watcher) processAllPendingJobs(ctx context.Context) error {
 
 // processAccountSyncJobs processes pending, failed, and processing account sync jobs
 func (w *Watcher) processAccountSyncJobs(ctx context.Context) error {
+	// Continuous backfill for accounts likely missed by trigger path.
+	if err := w.backfillMissingAccountJobs(ctx); err != nil {
+		log.Printf("Warning: failed to backfill missing account sync jobs in poll cycle: %v", err)
+	}
+
 	// Get pending jobs
 	pendingJobs, err := w.accountJobRepo.GetPendingJobs(ctx, 5)
 	if err != nil {

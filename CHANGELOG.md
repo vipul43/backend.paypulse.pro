@@ -151,6 +151,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column renames: account_id → accountId, created_at → createdAt, updated_at → updatedAt, etc.
 - Recreated all indexes with new column names
 - Payment externalReference now stores Gmail URL for cross-referencing source email
+- Replaced time-dependent payment statuses (upcoming, due, overdue) with single 'unpaid' status
+- Frontend calculates display status (upcoming/due/overdue) based on current time vs payment date
+- Removed current_time from LLM prompt (no longer needed for status calculation)
+- Added STATUS GUIDE section to LLM prompt for clearer status inference
 
 ### Removed
 
