@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dockerized local stack for worker runtime (`Dockerfile`, `docker-compose.yml`, `.dockerignore`)
+- Docker Makefile targets: `docker-build`, `docker-up`, `docker-down`, `docker-logs`
+- PostgreSQL container environment variables in `.env.example`: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - Account watcher service with polling mechanism (10-second interval)
 - PostgreSQL trigger to automatically create sync jobs on account insert
 - Account sync job table with status tracking (pending/processing/completed/failed)
@@ -76,6 +79,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Docker stack upgraded to PostgreSQL 18 (`postgres:18-alpine`)
+- PostgreSQL persistent mount updated to `/var/lib/postgresql` with `PGDATA=/var/lib/postgresql/18/docker`
+- Worker container now reads `DATABASE_URL` directly from `.env` (same contract as local `make run`)
+- Docker Compose now uses `.env` as the single source for both `DATABASE_URL` and `POSTGRES_*` variables
+- Removed Docker PostgreSQL init-script bind mount; base `account` table is expected from existing app/frontend migrations
 - Database column naming: uses camelCase to match Prisma/frontend schema
 - Status field from ENUM type to VARCHAR(50) with CHECK constraint for easier schema evolution
 - AccountProcessor now uses interface for better testability

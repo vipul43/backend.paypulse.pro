@@ -39,6 +39,41 @@ The service will:
 - Process any pending jobs from previous runs
 - Start polling for new accounts
 
+## Docker Quick Start
+
+```bash
+# If needed, create .env from template
+cp .env.example .env
+
+# Fill values in .env:
+# - DATABASE_URL
+# - POSTGRES_HOST
+# - POSTGRES_PORT
+# - POSTGRES_USER
+# - POSTGRES_PASSWORD
+# - POSTGRES_DB
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - OPENROUTER_API_KEY
+
+# Start postgres + worker
+make docker-up
+
+# Tail worker logs
+make docker-logs
+
+# Stop services
+make docker-down
+```
+
+Notes:
+- Postgres runs on `5432` (`5432:5432`) so frontend/local tools can connect.
+- Compose runs Postgres 18 and persists data at `/var/lib/postgresql` (PGDATA is `/var/lib/postgresql/18/docker`).
+- Worker reads `DATABASE_URL` from `.env` (same as local `make run`).
+- Postgres service reads `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` from `.env`.
+- Keep `DATABASE_URL` and `POSTGRES_*` values aligned.
+- Ensure the `account` table exists (typically from frontend/Prisma migrations) before worker migrations run.
+
 ## Project Structure
 
 ```
@@ -51,6 +86,8 @@ The service will:
 │   ├── repository/          # Data access layer
 │   ├── service/             # Business logic
 │   └── watcher/             # Polling & orchestration
+├── Dockerfile               # Worker container image
+├── docker-compose.yml       # Worker + Postgres local stack
 ├── migrations/              # SQL migrations
 └── test_setup.sql          # Test database setup
 ```
@@ -58,7 +95,12 @@ The service will:
 ## Configuration
 
 Edit `.env`:
-- `DATABASE_URL`: PostgreSQL connection string (required)
+- `DATABASE_URL`: PostgreSQL connection string (required by local run and worker container)
+- `POSTGRES_HOST`: PostgreSQL hostname/alias for Docker network
+- `POSTGRES_PORT`: PostgreSQL host port mapping (frontend/local DB tools use this)
+- `POSTGRES_USER`: PostgreSQL username (required for Docker Compose)
+- `POSTGRES_PASSWORD`: PostgreSQL password (required for Docker Compose)
+- `POSTGRES_DB`: PostgreSQL database name (required for Docker Compose)
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID (required for Gmail API)
 - `GOOGLE_CLIENT_SECRET`: Google OAuth client secret (required for Gmail API)
 - `OPENROUTER_API_KEY`: OpenRouter API key (for payment extraction)
@@ -66,6 +108,11 @@ Edit `.env`:
 Example:
 ```
 DATABASE_URL="postgres://user:password@localhost:5432/dbname?sslmode=disable"
+POSTGRES_HOST="postgres"
+POSTGRES_PORT="5432"
+POSTGRES_USER="kiwis"
+POSTGRES_PASSWORD="kiwis"
+POSTGRES_DB="kiwis"
 GOOGLE_CLIENT_ID="123456-abc.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="GOCSPX-xyz123"
 OPENROUTER_API_KEY="sk-or-v1-..."
@@ -112,6 +159,9 @@ Defaults (in code):
 make build              # Build the application
 make run                # Run the application
 make clean              # Clean build artifacts
+make docker-up          # Run in Docker (worker + postgres)
+make docker-down        # Stop Docker services
+make docker-logs        # Tail worker logs from Docker
 
 # Dependencies
 make deps               # Download Go dependencies
