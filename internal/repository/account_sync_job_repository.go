@@ -17,6 +17,31 @@ func NewAccountSyncJobRepository(db *gorm.DB) *AccountSyncJobRepository {
 	return &AccountSyncJobRepository{db: db}
 }
 
+// CreateMissingJobsForAccountsOlderThan creates pending account sync jobs for accounts
+// older than cutoff that don't have one yet.
+// Uses ON CONFLICT DO NOTHING to stay safe under concurrent inserts/trigger execution.
+func (r *AccountSyncJobRepository) CreateMissingJobsForAccountsOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
+	result := r.db.WithContext(ctx).Exec(`
+		INSERT INTO account_sync_job (id, "accountId", status, "createdAt", "updatedAt")
+		SELECT
+			gen_random_uuid()::text,
+			a.id,
+			?,
+			NOW(),
+			NOW()
+		FROM account a
+		LEFT JOIN account_sync_job asj ON asj."accountId" = a.id
+		WHERE asj.id IS NULL
+		  AND a."createdAt" <= ?
+		ON CONFLICT ("accountId") DO NOTHING
+	`, models.StatusPending, cutoff)
+	if result.Error != nil {
+		return 0, fmt.Errorf("failed to create missing account sync jobs: %w", result.Error)
+	}
+
+	return result.RowsAffected, nil
+}
+
 // GetPendingJobs retrieves all pending account sync jobs
 func (r *AccountSyncJobRepository) GetPendingJobs(ctx context.Context, limit int) ([]models.AccountSyncJob, error) {
 	var jobs []models.AccountSyncJob
