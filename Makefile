@@ -1,7 +1,9 @@
-.PHONY: help build run deps migrate-install migrate-up migrate-down migrate-status migrate-create migrate-force fmt fmt-check lint-install lint test test-coverage ci clean
+.PHONY: help build run deps migrate-install migrate-up migrate-down migrate-status migrate-create migrate-force fmt fmt-check lint-install lint test test-coverage ci docker-build docker-up docker-down docker-logs clean
 
 # Define migrate binary path
 MIGRATE := $(shell go env GOPATH)/bin/migrate
+DOCKER_IMAGE ?= kiwis-worker:local
+DOCKER_CONTAINER ?= kiwis-worker
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -73,6 +75,22 @@ test-coverage: ## Run tests with coverage report
 
 ci: deps fmt-check lint test build ## Run all CI checks (format, lint, test, build)
 	@echo "✅ All CI checks passed"
+
+docker-build: ## Build Docker image (uses .env)
+	@test -f .env || (echo "Error: .env file not found" && exit 1)
+	docker build -t $(DOCKER_IMAGE) .
+
+docker-up: docker-build ## Start worker container in Docker (uses .env)
+	@test -f .env || (echo "Error: .env file not found" && exit 1)
+	@bash -c 'source .env && test -n "$$DATABASE_URL" || (echo "Error: DATABASE_URL not set in .env" && exit 1)'
+	@docker rm -f $(DOCKER_CONTAINER) >/dev/null 2>&1 || true
+	docker run -d --name $(DOCKER_CONTAINER) --env-file .env $(DOCKER_IMAGE)
+
+docker-down: ## Stop worker container
+	@docker rm -f $(DOCKER_CONTAINER) >/dev/null 2>&1 || true
+
+docker-logs: ## Tail worker container logs
+	docker logs -f $(DOCKER_CONTAINER)
 
 clean: ## Clean build artifacts
 	rm -rf bin/ coverage.out coverage.html

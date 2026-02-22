@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Worker-only Docker runtime support (`Dockerfile`, `.dockerignore`)
+- Docker Makefile targets: `docker-build`, `docker-up`, `docker-down`, `docker-logs`
 - Account watcher service with polling mechanism (10-second interval)
 - PostgreSQL trigger to automatically create sync jobs on account insert
 - Account sync job table with status tracking (pending/processing/completed/failed)
@@ -76,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Docker workflow now runs only `kiwis-worker` container; PostgreSQL is expected to be hosted externally
+- Worker container uses `.env` `DATABASE_URL` directly (same contract as local `make run`)
 - Database column naming: uses camelCase to match Prisma/frontend schema
 - Status field from ENUM type to VARCHAR(50) with CHECK constraint for easier schema evolution
 - AccountProcessor now uses interface for better testability
@@ -158,6 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `docker-compose.yml` and embedded PostgreSQL container setup from the Docker workflow
 - Email table and all email storage functionality (simplified architecture for payment extraction focus)
 - Environment-based configuration (no longer needed without email storage)
 - Email table migration files (000004_create_email_table.up.sql and .down.sql)

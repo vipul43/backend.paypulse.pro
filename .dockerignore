@@ -1,0 +1,9 @@
+.git
+.github
+.DS_Store
+.env
+.env.*
+bin
+coverage.out
+coverage.html
+examples

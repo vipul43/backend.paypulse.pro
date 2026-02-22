@@ -39,6 +39,33 @@ The service will:
 - Process any pending jobs from previous runs
 - Start polling for new accounts
 
+## Docker Quick Start
+
+```bash
+# If needed, create .env from template
+cp .env.example .env
+
+# Fill values in .env:
+# - DATABASE_URL
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - OPENROUTER_API_KEY
+
+# Start worker container
+make docker-up
+
+# Tail worker logs
+make docker-logs
+
+# Stop worker container
+make docker-down
+```
+
+Notes:
+- Docker setup runs only the `kiwis-worker` container.
+- PostgreSQL is expected to be hosted separately; worker connects using `.env` `DATABASE_URL`.
+- Ensure the `account` table exists (typically from frontend/Prisma migrations) before worker migrations run.
+
 ## Project Structure
 
 ```
@@ -51,6 +78,7 @@ The service will:
 │   ├── repository/          # Data access layer
 │   ├── service/             # Business logic
 │   └── watcher/             # Polling & orchestration
+├── Dockerfile               # Worker container image
 ├── migrations/              # SQL migrations
 └── test_setup.sql          # Test database setup
 ```
@@ -58,7 +86,7 @@ The service will:
 ## Configuration
 
 Edit `.env`:
-- `DATABASE_URL`: PostgreSQL connection string (required)
+- `DATABASE_URL`: PostgreSQL connection string (required by local run and worker container)
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID (required for Gmail API)
 - `GOOGLE_CLIENT_SECRET`: Google OAuth client secret (required for Gmail API)
 - `OPENROUTER_API_KEY`: OpenRouter API key (for payment extraction)
@@ -112,6 +140,9 @@ Defaults (in code):
 make build              # Build the application
 make run                # Run the application
 make clean              # Clean build artifacts
+make docker-up          # Run worker container in Docker
+make docker-down        # Stop worker container
+make docker-logs        # Tail worker container logs
 
 # Dependencies
 make deps               # Download Go dependencies
