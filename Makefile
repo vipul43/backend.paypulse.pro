@@ -2,6 +2,8 @@
 
 # Define migrate binary path
 MIGRATE := $(shell go env GOPATH)/bin/migrate
+DOCKER_IMAGE ?= kiwis-worker:local
+DOCKER_CONTAINER ?= kiwis-worker
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -76,25 +78,19 @@ ci: deps fmt-check lint test build ## Run all CI checks (format, lint, test, bui
 
 docker-build: ## Build Docker image (uses .env)
 	@test -f .env || (echo "Error: .env file not found" && exit 1)
-	docker compose --env-file .env build worker
+	docker build -t $(DOCKER_IMAGE) .
 
-docker-up: ## Start worker + postgres in Docker (uses .env)
+docker-up: docker-build ## Start worker container in Docker (uses .env)
 	@test -f .env || (echo "Error: .env file not found" && exit 1)
 	@bash -c 'source .env && test -n "$$DATABASE_URL" || (echo "Error: DATABASE_URL not set in .env" && exit 1)'
-	@bash -c 'source .env && test -n "$$POSTGRES_HOST" || (echo "Error: POSTGRES_HOST not set in .env" && exit 1)'
-	@bash -c 'source .env && test -n "$$POSTGRES_PORT" || (echo "Error: POSTGRES_PORT not set in .env" && exit 1)'
-	@bash -c 'source .env && test -n "$$POSTGRES_USER" || (echo "Error: POSTGRES_USER not set in .env" && exit 1)'
-	@bash -c 'source .env && test -n "$$POSTGRES_PASSWORD" || (echo "Error: POSTGRES_PASSWORD not set in .env" && exit 1)'
-	@bash -c 'source .env && test -n "$$POSTGRES_DB" || (echo "Error: POSTGRES_DB not set in .env" && exit 1)'
-	docker compose --env-file .env up --build -d
+	@docker rm -f $(DOCKER_CONTAINER) >/dev/null 2>&1 || true
+	docker run -d --name $(DOCKER_CONTAINER) --env-file .env $(DOCKER_IMAGE)
 
-docker-down: ## Stop Docker services (uses .env)
-	@test -f .env || (echo "Error: .env file not found" && exit 1)
-	docker compose --env-file .env down
+docker-down: ## Stop worker container
+	@docker rm -f $(DOCKER_CONTAINER) >/dev/null 2>&1 || true
 
-docker-logs: ## Tail worker logs in Docker (uses .env)
-	@test -f .env || (echo "Error: .env file not found" && exit 1)
-	docker compose --env-file .env logs -f worker
+docker-logs: ## Tail worker container logs
+	docker logs -f $(DOCKER_CONTAINER)
 
 clean: ## Clean build artifacts
 	rm -rf bin/ coverage.out coverage.html
